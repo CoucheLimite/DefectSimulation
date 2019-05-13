@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
 import scipy.constants as const
 from scipy.integrate import odeint
 from semiconductor.material.thermal_velocity import ThermalVelocity as Vel_th
@@ -19,8 +18,9 @@ class defectSimu():
     The order of the energy level, capture cross section and the occupany f
     calculated are from the most negatively charged states to the most postively
     charged states. See below:
-    Donor Type D: Et = E0/+, f = [f0, f+]
-    Acceptor Type A: Et = E-/0, f = [f-, f0]
+    Donor Type D: Et = E0/+, f = [f0, f+, 0] The 0 here is meaningless, just to
+    make the list length the same as two level defect
+    Acceptor Type A: Et = E-/0, f = [f-, f0, 0] The 0 here is meaningless
     Donor-acceptor Type AD: Et = [E-/0, E0/+], f = [f-, f0, f+]
     Double-acceptor AA: Et = [E--/-, E-/0], f = [f--, f-, f0]
     Double-donor Type DD: Et = [E0/+, E+/++], f = [f0, f+, f++]
@@ -69,12 +69,7 @@ class defectSimu():
         self.getsomeparam()
         self.f0list = [] # List of occupancy
         for d in self.defect_list:
-            if d['type'] == 'D':
-                self.f0list.append([1,0])
-            elif d['type'] == 'A':
-                self.f0list.append([1,0])
-            else:
-                self.f0list.append([1, 0, 0])
+            self.f0list.append([1, 0, 0])
         diff = 100
         while diff > self.tol:
             Ndtot1 = 0
@@ -113,14 +108,14 @@ class defectSimu():
                                    1 / FFF, self.ni / self.n0 * np.exp(x['Et'][1] / kb / self.temp) / FFF])
                 else:
                     fnlist.append([1 / (1 + np.exp(x['Et'] / kb / self.temp) * self.ni / self.n0),\
-                                   1 / (1 + self.n0/np.exp(x['Et'] / kb / self.temp) / self.ni )])
+                                   1 / (1 + self.n0/np.exp(x['Et'] / kb / self.temp) / self.ni ),0])
             diff = 0
             for fn, f, d in zip(fnlist, self.f0list, self.defect_list):
                 if d['type'] == 'DD' or d['type'] == 'AA' or d['type'] == 'AD':
                     diff += abs(fn[0] - f[0]) + abs(fn[-1] - f[-1])
                 else:
                     diff += abs(fn[0] - f[0])
-            self.f0list = fnlist
+            self.f0list = np.asarray(fnlist)
 
 
     def calculatent(self,flist):
@@ -166,7 +161,7 @@ class defectSimu():
         nt0 = np.sum(self.calculatent(self.f0list))
         dnt = []
         for fflist in flist:
-            dnt.append(np.sum(self.calculatent(fflist) - nt0))
+            dnt.append(np.sum(self.calculatent(fflist)) - nt0)
         dnt = np.asarray(dnt)
         chargelist = dp-dn-dnt
         return chargelist
@@ -214,7 +209,7 @@ class defectSimu():
                         1-((x['sigma_e'] * self.ve * n + x['sigma_h'] \
                         * self.vh * self.ni * np.exp(-x['Et'] / kb / self.temp)) /
                         (x['sigma_e'] * self.ve * (n + self.ni * np.exp(x['Et'] / kb / self.temp)) +\
-                        x['sigma_h'] * self.vh * (p + self.ni * np.exp(-x['Et'] / kb / self.temp))))])
+                        x['sigma_h'] * self.vh * (p + self.ni * np.exp(-x['Et'] / kb / self.temp)))),0])
                 ntsum = sum(self.calculatent(fnnlist))
                 if self.doptype == 'p':
                     pp = (self.p0 + dx + (ntsum - nt0sum))
@@ -228,6 +223,7 @@ class defectSimu():
             nlist.append(n)
             plist.append(p)
             flist.append(fnnlist)
+        flist=np.asarray(flist)
         return nlist, plist, flist
 
 
@@ -235,7 +231,7 @@ class defectSimu():
         self.SolveEq()
         initalcharge = self.calculateChargeNeutrality(nlist=[n0], plist=[p0], flist=[f0list])
         if initalcharge[0]>1000:
-            warnings.warn('Check the charge neutrality of the inital state',UserWarning)
+            warnings.warn('Inital charge = {:.2e} \nCheck the charge neutrality of the inital state'.format(initalcharge[0]),UserWarning)
 
         y0 = [n0, p0]
         for x,f in zip(self.defect_list,f0list):
@@ -306,9 +302,10 @@ class defectSimu():
                     fnnlist.append([sol[i,currentidx]/x['Nt'],1-sol[i,currentidx]/x['Nt']-sol[i,currentidx+1]/x['Nt'],sol[i,currentidx+1]/x['Nt']])
                     currentidx += 2
                 else:
-                    fnnlist.append([sol[i,currentidx]/x['Nt'],1-sol[i,currentidx]/x['Nt']])
+                    fnnlist.append([sol[i,currentidx]/x['Nt'],1-sol[i,currentidx]/x['Nt'],0])
                     currentidx += 1
             flist.append(fnnlist)
+        flist=np.asarray(flist)
         return nlist, plist, flist, gen
 
 
@@ -428,4 +425,3 @@ class defectSimu():
             (alpha_e1 * alpha_h1 / (alpha_e1 * n1 + alpha_h1 * p)))
         tau = nxc / R
         return tau
-
