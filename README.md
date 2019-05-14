@@ -120,4 +120,5 @@ You should get something like this:
 7. Other functions for you to explore:
 * Solve for the Transient process with a sharply switched on generation with `SolveTransient`, another parameter the generation rate `fillG` needs to be defined, set the `opt='fill'`. This can be used to simulate the carrier capture process of traps under a sharply switched on excitation.
 * The function `calculateChargeNeutrality` can be used to check the charge neutrality for given `nlist`, `plist` and `flist`
-* There is also simple function `singlelevelSRH` and `twolevelSRH` using analytical equations to calculate minority carrier lifetime for a single-level defect and a two-levels defect respectively. It should be noted that the analytical equations assumes $\delta$ n = $\delta$ p
+* There is also simple function `singlelevelSRH` and `twolevelSRH` using analytical equations to calculate minority carrier lifetime for a single-level defect and a two-levels defect respectively. It should be noted that the analytical equations assumes Δn = Δp
+* A function `calculateRate` can be used to output the capture and emission rate from each defect level for given `nlist`, `plist` and `flist`
