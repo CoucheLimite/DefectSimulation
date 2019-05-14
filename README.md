@@ -94,7 +94,24 @@ plt.ylabel('Lifetime [s]')
 ```
 You should get something like this:  
 ![Steady state Lifetime](/example/Lifetime.png)
-
-
-
-
+6. Solve for Transient decay with `SolveTransient`, the time list `t`, inital electron concentration `n_initial`, inital electron concentration `p_initial`, inital trap charge state distribution list `flist_initial` need to be defined, set the `opt='decay'`
+```python
+nlist_t, plist_t, flist_t, gen = example.SolveTransient(t, n_initial=nlist[-1], p_initial=plist[-1], flist_initial=flist[-1], opt='decay')
+```
+The outputs are: the list of electron concentration, the list of hole concentration, the list of trap charge states distribution and the 
+list of generation rate (in this transient decay, it's a list of zeros)  
+A simple function `calculateTranslifetime` can be used to calculate the steady state lifetime for minority carriers, majority carriers and apparent carriers. The photoconductance is also calculated (Actually the photoconductance times the thickness of sample).
+```python
+dminorlist_t, tauminorlist_t, dmajlist_t, taumajorlist_t, dapplist_t, tauapplist_t, condlist_t = example.calculateTranslifetime(nlist_t, plist_t, t, gen)
+plt.figure('Lifetime Transient Devay')
+plt.plot(dminorlist_t,tauminorlist_t,label='Minority')
+plt.plot(dmajlist_t,taumajorlist_t,label='Majority')
+plt.plot(dapplist_t,tauapplist_t,label='Apparent')
+plt.legend()
+plt.loglog()
+plt.xlabel('Excess carrier density [cm-3]')
+plt.ylabel('Lifetime [s]')
+plt.xlim([1e8,1e16])
+```
+You should get something like this:  
+![Steady state Lifetime](/example/Lifetime_Transient_Devay.png)
