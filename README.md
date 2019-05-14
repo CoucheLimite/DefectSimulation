@@ -58,6 +58,7 @@ The output should like:
 Defect No.0: {'type': 'A', 'Et': 0.0, 'sigma_e': 1e-12, 'sigma_h': 1e-12, 'Nt': 1000000000000.0}
 Defect No.1: {'type': 'DD', 'Nt': 1000000000000.0, 'Et': [-0.16, 0.396], 'sigma_e': [1e-17, 1e-17], 'sigma_h': [1e-18, 1e-18]}
 ```
+
 4. The thermal euilibrium solution should be automated updated whenever there is a change of the defect list, the electron concentration `n0`, the hole concentration `p0` and fraction of defect in each charge states `f0list` are solved
 ```python
 print(example.n0, example.p0, example.f0list, sep='\n')
@@ -74,7 +75,7 @@ The f0list is a numpy array with the dimension (no. of defect, 3). For each defe
 * 'D' f0list = [f-, f0, 0], the 0 here is meaningless, just to make the array length the same as two level defect
 * 'AA' f0list = [f-, f0, f+]
 * 'AD' f0list = [f--, f-, f0]
-* 'DD' f0list = [f0, f+, f++]
+* 'DD' f0list = [f0, f+, f++]  
 5. Solve for steady state condition with `SolveSS`, the excess minority carrier density `nxc` needs to be defined, it can be one value or a list or an array of value
 ```python
 nlist, plist, flist = example.SolveSS(nxc=np.logspace(12,16,50))
@@ -93,7 +94,7 @@ plt.xlabel('Excess carrier density [cm-3]')
 plt.ylabel('Lifetime [s]')
 ```
 You should get something like this:  
-![Steady state Lifetime](/example/Lifetime.png)
+![Steady state Lifetime](/example/Lifetime.png)  
 6. Solve for Transient decay with `SolveTransient`, the time list `t`, inital electron concentration `n_initial`, inital electron concentration `p_initial`, inital trap charge state distribution list `flist_initial` need to be defined, set the `opt='decay'`
 ```python
 t = np.linspace(0,1e-5,100000)  ## You might need to play with the steps of time for convergency of the solver
