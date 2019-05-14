@@ -227,14 +227,14 @@ class defectSimu():
         return nlist, plist, flist
 
 
-    def SolveTransient(self, t, n0, p0, f0list, fillG=1e20, opt='decay',**kwarg):
+    def SolveTransient(self, t, n_initial, p_initial, flist_initial, fillG=1e20, opt='decay',**kwarg):
         self.SolveEq()
-        initalcharge = self.calculateChargeNeutrality(nlist=[n0], plist=[p0], flist=[f0list])
+        initalcharge = self.calculateChargeNeutrality(nlist=[n_initial], plist=[p_initial], flist=[flist_initial])
         if initalcharge[0]>1000:
             warnings.warn('Inital charge = {:.2e} \nCheck the charge neutrality of the inital state'.format(initalcharge[0]),UserWarning)
 
-        y0 = [n0, p0]
-        for x,f in zip(self.defect_list,f0list):
+        y0 = [n_initial, p_initial]
+        for x,f in zip(self.defect_list,flist_initial):
             if x['type'] == 'AD' or x['type'] == 'DD' or x['type'] == 'AA':
                 y0.append(x['Nt']*f[0])
                 y0.append(x['Nt']*f[2])
@@ -350,7 +350,8 @@ class defectSimu():
         return Gelist, Relist, Ghlist, Rhlist, Utotlist
 
 
-    def calculateSSlifetime(self, nlist, plist, Utotlist, **kward):
+    def calculateSSlifetime(self, nlist, plist, flist, **kward):
+        Utotlist = self.calculateRate(nlist, plist, flist)[-1]
         condlist = []
         dminorlist = []
         tauminorlist = []
