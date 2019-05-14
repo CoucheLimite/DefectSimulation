@@ -116,7 +116,7 @@ plt.ylabel('Lifetime [s]')
 plt.xlim([1e8,1e16])
 ```
 You should get something like this:  
-![Transient Lifetime](/example/Lifetime_Transient_Devay.png)
+![Transient Lifetime](/example/Lifetime_Transient_Devay.png)  
 7. Other functions for you to explore:
 * Solve for the Transient process with a sharply switched on generation with `SolveTransient`, another parameter the generation rate `fillG` needs to be defined, set the `opt='fill'`. This can be used to simulate the carrier capture process of traps under a sharply switched on excitation.
 * The function `calculateChargeNeutrality` can be used to check the charge neutrality for given `nlist`, `plist` and `flist`
