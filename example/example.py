@@ -30,4 +30,19 @@ plt.loglog()
 plt.xlabel('Excess carrier density [cm-3]')
 plt.ylabel('Lifetime [s]')
 
+t = np.linspace(0,1e-5,100000)  ## You might need to play with the steps of time for convergency of the solver
+nlist_t, plist_t, flist_t, gen = example.SolveTransient(t, n_initial=nlist[-1], p_initial=plist[-1], flist_initial=flist[-1], opt='decay')
+## in this example, we use the steady state solution at nxc =1e16 cm-3 as the intial decay condition
+
+dminorlist_t, tauminorlist_t, dmajlist_t, taumajorlist_t, dapplist_t, tauapplist_t, condlist_t = example.calculateTranslifetime(nlist_t, plist_t, t, gen)
+plt.figure('Lifetime Transient Devay')
+plt.plot(dminorlist_t,tauminorlist_t,label='Minority')
+plt.plot(dmajlist_t,taumajorlist_t,label='Majority')
+plt.plot(dapplist_t,tauapplist_t,label='Apparent')
+plt.legend()
+plt.loglog()
+plt.xlabel('Excess carrier density [cm-3]')
+plt.ylabel('Lifetime [s]')
+plt.xlim([1e8,1e16])
+
 plt.show()
