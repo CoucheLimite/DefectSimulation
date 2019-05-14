@@ -92,8 +92,8 @@ plt.loglog()
 plt.xlabel('Excess carrier density [cm-3]')
 plt.ylabel('Lifetime [s]')
 ```
-You should get something like this:
-![Alt text](/path/to/img.jpg)
+You should get something like this:  
+![Steady state Lifetime](/example/Lifetime.png)
 
 
 
