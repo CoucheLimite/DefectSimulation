@@ -96,7 +96,9 @@ You should get something like this:
 ![Steady state Lifetime](/example/Lifetime.png)
 6. Solve for Transient decay with `SolveTransient`, the time list `t`, inital electron concentration `n_initial`, inital electron concentration `p_initial`, inital trap charge state distribution list `flist_initial` need to be defined, set the `opt='decay'`
 ```python
+t = np.linspace(0,1e-5,100000)  ## You might need to play with the steps of time for convergency of the solver
 nlist_t, plist_t, flist_t, gen = example.SolveTransient(t, n_initial=nlist[-1], p_initial=plist[-1], flist_initial=flist[-1], opt='decay')
+## in this example, we use the steady state solution at nxc =1e16 cm-3 as the intial decay condition
 ```
 The outputs are: the list of electron concentration, the list of hole concentration, the list of trap charge states distribution and the 
 list of generation rate (in this transient decay, it's a list of zeros)  
@@ -114,4 +116,8 @@ plt.ylabel('Lifetime [s]')
 plt.xlim([1e8,1e16])
 ```
 You should get something like this:  
-![Steady state Lifetime](/example/Lifetime_Transient_Devay.png)
+![Transient Lifetime](/example/Lifetime_Transient_Devay.png)
+7. Other functions for you to explore:
+* Solve for the Transient process with a sharply switched on generation with `SolveTransient`, another parameter the generation rate `fillG` needs to be defined, set the `opt='fill'`. This can be used to simulate the carrier capture process of traps under a sharply switched on excitation.
+* The function `calculateChargeNeutrality` can be used to check the charge neutrality for given `nlist`, `plist` and `flist`
+* There is also simple function `singlelevelSRH` and `twolevelSRH` using analytical equations to calculate minority carrier lifetime for a single-level defect and a two-levels defect respectively. It should be noted that the analytical equations assumes $\delta$ n = $\delta$ p
