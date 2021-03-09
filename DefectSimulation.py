@@ -26,17 +26,20 @@ class defectSimu():
     Double-acceptor AA: Et = [E--/-, E-/0], f = [f--, f-, f0]
     Double-donor Type DD: Et = [E0/+, E+/++], f = [f0, f+, f++]
     '''
-    def __init__(self, Ndop=1e16, doptype='p', temp=300, tol=1e-10, maxite = 5000, dampfactor=1e-2, **kwarg):
+    def __init__(self, Ndop=1e16, doptype='p', temp=300, B_rad=None, customparam={'ni':None,'ve':None,'vh':None,'Na_b':None,'Nd_b':None,'miu_e':None,'miu_h':None}, tol=1e-10, maxite = 5000, dampfactor=1e-2, recalEq=True, **kwarg):
         '''
         Initiate the class with the sample parameter
         '''
         self.Ndop = Ndop
         self.doptype = doptype
         self.temp = temp
+        self.B_rad = B_rad
         self.defect_list=[]
         self.tol = tol
         self.dampfactor = dampfactor
         self.maxite = maxite
+        self.recalEq = recalEq
+        self.customparam = customparam # if a parameter is None, caluculate the material parameter using silicon model
         self.getsomeparam()
 
     def addDefect(self,param_defect={'type':'D','Et':0,'sigma_e':1e-12,'sigma_h':1e-12,'Nt':1e12}):
@@ -66,24 +69,49 @@ class defectSimu():
         Note that the mobility is calculated for thermal equilibrium and only 
         considers the base doping, i.e., the defect induced doping is not considered
         '''
-        ni = NI().update(temp=self.temp)
-        self.ni = ni[0]
-        ve, self.vh = Vel_th().update(temp=self.temp)
-        self.ve = ve[0]
-        if self.doptype == 'p':
-            Na = Ion(temp=self.temp).update_dopant_ionisation(
-                N_dop=self.Ndop, nxc=0, impurity='boron')
-            self.Na_b = Na[0]
-            self.Nd_b = 0.1
-        elif self.doptype == 'n':
-            Nd = Ion(temp=self.temp).update_dopant_ionisation(
-                N_dop=self.Ndop, nxc=0, impurity='phosphorous')
-            self.Nd_b = Nd[0]
-            self.Na_b = 0.1
-        self.miu_tot = mob(temp=self.temp, Na=self.Na_b, Nd=self.Nd_b).mobility_sum()
-        self.miu_h = mob(temp=self.temp, Na=self.Na_b, Nd=self.Nd_b).hole_mobility()
-        self.miu_e = mob(temp=self.temp, Na=self.Na_b, Nd=self.Nd_b).electron_mobility()
-
+        if self.customparam['ni'] is not None:
+            self.ni = self.customparam['ni']
+        else:
+            ni = NI().update(temp=self.temp)
+            self.ni = ni[0]
+        if self.customparam['ve'] is not None:
+            self.ve = self.customparam['ve']
+        else:
+            ve, vh = Vel_th().update(temp=self.temp)
+            self.ve = ve[0]
+        if self.customparam['vh'] is not None:
+            self.vh = self.customparam['vh']
+        else:
+            ve, vh = Vel_th().update(temp=self.temp)
+            self.vh = vh
+        if self.customparam['Na_b'] is not None:
+            self.Na_b = self.customparam['Na_b']
+        else:
+            if self.doptype == 'p':
+                Na = Ion(temp=self.temp).update_dopant_ionisation(
+                    N_dop=self.Ndop, nxc=0, impurity='boron')
+                self.Na_b = Na[0]
+            elif self.doptype == 'n':
+                self.Na_b = 0.1
+        if self.customparam['Nd_b'] is not None:
+            self.Nd_b = self.customparam['Nd_b']
+        else:
+            if self.doptype == 'p':
+                self.Nd_b = 0.1
+            elif self.doptype == 'n':
+                Nd = Ion(temp=self.temp).update_dopant_ionisation(
+                    N_dop=self.Ndop, nxc=0, impurity='phosphorous')
+                self.Nd_b = Nd[0]
+        if self.customparam['miu_e'] is not None:
+            self.miu_e = self.customparam['miu_e']
+        else:
+            self.miu_e = mob(temp=self.temp, Na=self.Na_b, Nd=self.Nd_b).electron_mobility()
+        if self.customparam['miu_h'] is not None:
+            self.miu_h = self.customparam['miu_h']
+        else:
+            self.miu_h = mob(temp=self.temp, Na=self.Na_b, Nd=self.Nd_b).hole_mobility()
+        self.miu_tot = self.miu_e + self.miu_h
+            
 
     def SolveEq(self):
         '''
@@ -217,7 +245,8 @@ class defectSimu():
         '''
         if isinstance(nxc,int) or isinstance(nxc,float):
             nxc = [nxc]
-        self.SolveEq()
+        if self.recalEq:
+            self.SolveEq()
         nt0sum = sum(self.calculatent(self.f0list))
         nlist = []
         plist = []
@@ -273,6 +302,8 @@ class defectSimu():
             plist.append(p)
             flist.append(fnnlist)
         flist=np.asarray(flist)
+        nlist=np.asarray(nlist)
+        plist=np.asarray(plist)
         return nlist, plist, flist
 
 
@@ -281,7 +312,8 @@ class defectSimu():
         Solve the transiente carrier concentrations and defects' occupancy
         The input is the initial carrier concentrations and defect occupancy
         '''
-        self.SolveEq()
+        if self.recalEq:
+            self.SolveEq()
         initalcharge = self.calculateChargeNeutrality(nlist=[n_initial], plist=[p_initial], flist=[flist_initial])
         if initalcharge[0]>1000:
             warnings.warn('Inital charge = {:.2e} \nCheck the charge neutrality of the inital state'.format(initalcharge[0]),UserWarning)
@@ -336,9 +368,12 @@ class defectSimu():
                             (x['Nt']-y[currentidx])-p*y[currentidx]))-(x['sigma_e'] * self.ve *(self.ni*np.exp(x['Et'] / kb / self.temp)*\
                                     y[currentidx]-n*(x['Nt']-y[currentidx]))))
                     currentidx +=1
-
-            dydt[0] = Gen + dndt
-            dydt[1] = Gen + dpdt
+            if self.B_rad is not None:
+                dydt[0] = Gen + dndt - self.B_rad*(n*p-self.n0*self.p0)
+                dydt[1] = Gen + dpdt - self.B_rad*(n*p-self.n0*self.p0)
+            else:
+                dydt[0] = Gen + dndt
+                dydt[1] = Gen + dpdt
             return dydt
 
         sol = odeint(trapode, y0, t, args=(Gen,), rtol=self.tol, atol=self.tol)
@@ -372,6 +407,8 @@ class defectSimu():
         Ghlist = []
         Rhlist = []
         Utotlist = []
+        if self.B_rad is not None:
+            Uradlist = []
         for n, p, fnnlist in zip(nlist, plist, flist):
             Ge = []
             Re = []
@@ -404,43 +441,47 @@ class defectSimu():
             Ghlist.append(Gh)
             Rhlist.append(Rh)
             Utotlist.append(Utot)
+            if self.B_rad is not None:
+                Uradlist.append(self.B_rad*(n*p-self.n0*self.p0))
         Gelist=np.asarray(Gelist)
         Relist=np.asarray(Relist)
         Ghlist=np.asarray(Ghlist)
         Rhlist=np.asarray(Rhlist)
-        Utotlist=np.asarray(Utotlist)    
-        return Gelist, Relist, Ghlist, Rhlist, Utotlist
+        Utotlist=np.asarray(Utotlist) 
+        if self.B_rad is not None:
+            Uradlist=np.asarray(Uradlist) 
+            return Gelist, Relist, Ghlist, Rhlist, Utotlist, Uradlist
+        else:
+            return Gelist, Relist, Ghlist, Rhlist, Utotlist
 
 
     def calculateSSlifetime(self, nlist, plist, flist, **kward):
         '''
         Calculate the steady state lifetime
         '''
-        Utotlist = self.calculateRate(nlist, plist, flist)[-1]
+        if self.B_rad is not None:
+            Utotlist, Uradlist = self.calculateRate(nlist, plist, flist)[-2:]
+        else:
+            Utotlist = self.calculateRate(nlist, plist, flist)[-1]
+            Uradlist = Utotlist*0
         condlist = []
-        dminorlist = []
-        tauminorlist = []
-        dmajlist = []
-        taumajorlist = []
+        dnlist = []
+        taunlist = []
+        dplist = []
+        tauplist = []
         dapplist = []
         tauapplist = []
-        for n, p, Utot in zip(nlist, plist, Utotlist):
+        for n, p, Utot, Urad in zip(nlist, plist, Utotlist,Uradlist):
             condlist.append(
                 const.e * (self.miu_e * (n - self.n0) + self.miu_h * (p - self.p0)))
             dapplist.append(((n - self.n0) * self.miu_e + (p - self.p0) * self.miu_h) / self.miu_tot)
             tauapplist.append(
-                (((n - self.n0) * self.miu_e + (p - self.p0) * self.miu_h) / self.miu_tot) / Utot)
-            if self.doptype == 'n':
-                dminorlist.append(p - self.p0)
-                tauminorlist.append((p - self.p0) / Utot)
-                dmajlist.append(n - self.n0)
-                taumajorlist.append((n - self.n0) / Utot)
-            elif self.doptype == 'p':
-                dminorlist.append(n - self.n0)
-                tauminorlist.append((n - self.n0) / Utot)
-                dmajlist.append(p - self.p0)
-                taumajorlist.append((p - self.p0) / Utot)
-        return dminorlist, tauminorlist, dmajlist, taumajorlist, dapplist, tauapplist, condlist
+                (((n - self.n0) * self.miu_e + (p - self.p0) * self.miu_h) / self.miu_tot) / (Utot+Urad))
+            dplist.append(p - self.p0)
+            tauplist.append((p - self.p0) / (Utot+Urad))
+            dnlist.append(n - self.n0)
+            taunlist.append((n - self.n0) / (Utot+Urad))
+        return dnlist, taunlist, dplist, tauplist, dapplist, tauapplist, condlist
 
 
     def calculateTranslifetime(self, nlist, plist, t, gen, **kward):
@@ -450,20 +491,29 @@ class defectSimu():
         condlist = const.e * (self.miu_e * (nlist - self.n0) + self.miu_h * (plist - self.p0))
         dapplist = (self.miu_e * (nlist - self.n0) + self.miu_h * (plist - self.p0))/self.miu_tot
         tauapplist= dapplist[1:]/(gen[1:]-np.diff(dapplist) / np.diff(t))
-        if self.doptype == 'n':
-            dminorlist = plist - self.p0
-            tauminorlist= dminorlist[1:]/(gen[1:]-np.diff(plist) / np.diff(t))
-            dmajlist = nlist - self.n0
-            taumajorlist = dmajlist[1:]/(gen[1:]-np.diff(nlist) / np.diff(t))
-        elif self.doptype == 'p':
-            dminorlist = nlist - self.n0
-            tauminorlist= dminorlist[1:]/(gen[1:]-np.diff(nlist) / np.diff(t))
-            dmajlist = plist - self.p0
-            taumajorlist = dmajlist[1:]/(gen[1:]-np.diff(plist) / np.diff(t))
+        dplist = plist - self.p0
+        tauplist= dplist[1:]/(gen[1:]-np.diff(plist) / np.diff(t))
+        dnlist = nlist - self.n0
+        taunlist = dnlist[1:]/(gen[1:]-np.diff(nlist) / np.diff(t))
         tauapplist = np.append([tauapplist[0]],tauapplist)
-        tauminorlist = np.append([tauminorlist[0]],tauminorlist)
-        taumajorlist = np.append([taumajorlist[0]],taumajorlist)
-        return dminorlist, tauminorlist, dmajlist, taumajorlist, dapplist, tauapplist, condlist
+        taunlist = np.append([taunlist[0]],taunlist)
+        tauplist = np.append([tauplist[0]],tauplist)
+        return dnlist, taunlist, dplist, tauplist, dapplist, tauapplist, condlist
+
+
+    def calculateRadlifetime(self,nlist, plist,**kwarg):
+        if self.B_rad is not None:
+            dnlist = nlist - self.n0
+            dplist = plist - self.p0
+            Urad = self.B_rad*(nlist*plist-self.n0*self.p0)
+            tau_rad_n = dnlist/Urad
+            tau_rad_p = dplist/Urad
+        else:
+            dnlist = []
+            dplist = []
+            tau_rad_n = [] 
+            tau_rad_p = []
+        return dnlist, tau_rad_n, dplist, tau_rad_p
 
 
     def singleSRH(self, nxc, defect, **kward):
@@ -502,3 +552,4 @@ class defectSimu():
             (alpha_e1 * alpha_h1 / (alpha_e1 * n1 + alpha_h1 * p)))
         tau = nxc / R
         return tau
+
