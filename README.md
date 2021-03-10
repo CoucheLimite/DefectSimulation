@@ -124,3 +124,8 @@ You should get something like this:
 * The function `calculateChargeNeutrality` can be used to check the charge neutrality for given `nlist`, `plist` and `flist`
 * There is also simple function `singlelevelSRH` and `twolevelSRH` using analytical equations to calculate minority carrier lifetime for a single-level defect and a two-levels defect respectively. It should be noted that the analytical equations assumes Δn = Δp
 * A function `calculateRate` can be used to output the capture and emission rate from each defect level for given `nlist`, `plist` and `flist`
+
+## Publications:
+[1] Y. Zhu, M.K. Juhl, G. Coletti, and Z. Hameiri, IEEE Journal of Photovoltaics 9, 652 (2019).
+[2] Y. Zhu, M. Juhl, G. Coletti, and Z. Hameiri, IEEE Journal of Photovoltaics 8, 421 (2018).
+
