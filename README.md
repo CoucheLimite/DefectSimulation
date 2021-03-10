@@ -8,6 +8,7 @@
 ## Objectives and scopes
 * It can be used to simulate single-level defects following Shockley-Read-Hall statistics or two-levels defects follwoing Sah-Shockley stastistc by numerically solving the carrier continuity equations.
 * It can solve for thermal equlibrium condition, steady state illumination condition, transient condition with excitation sharply switch on or off.
+* It can calculate material related parameters based on exisitng models (using the semiconductor package), or use the user input parameters.
 * It is an 1-D simulation so no non-uniform distribution of carriers is considered.
 
 ## Here is a simple explanation of how to use it:
