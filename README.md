@@ -126,6 +126,6 @@ You should get something like this:
 * A function `calculateRate` can be used to output the capture and emission rate from each defect level for given `nlist`, `plist` and `flist`
 
 ## Publications:
-[1] Y. Zhu, M.K. Juhl, G. Coletti, and Z. Hameiri, IEEE Journal of Photovoltaics 9, 652 (2019).
+[1] Y. Zhu, M.K. Juhl, G. Coletti, and Z. Hameiri, IEEE Journal of Photovoltaics 9, 652 (2019).    
 [2] Y. Zhu, M. Juhl, G. Coletti, and Z. Hameiri, IEEE Journal of Photovoltaics 8, 421 (2018).
 
